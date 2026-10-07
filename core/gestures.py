@@ -2,8 +2,8 @@
 
 from enum import Enum
 
-from config import GestureConfig
-from utils import distance, straight
+from config.config import GestureConfig
+from core.utils import distance, straight
 
 
 class Gesture(Enum):
@@ -21,14 +21,29 @@ class GestureGate:
     """Підтверджувати утриманий жест і видавати разову команду один раз."""
 
     def __init__(self, hold: float):
-        """Ініціалізувати таймер заданою тривалістю утримання."""
+        """Ініціалізувати таймер заданою тривалістю утримання.
+
+        Args:
+            hold (float): Тривалість утримання жесту в секундах.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         self.hold = hold
         self.gesture = None
         self.since = 0.0
         self.fired = False
 
     def update(self, gesture: Gesture | None, now: float):
-        """Повернути (нова подія, активний жест); зміна скидає таймер."""
+        """Повернути (нова подія, активний жест); зміна скидає таймер.
+
+        Args:
+            gesture (Gesture | None): Розпізнаний жест або None, якщо його немає.
+            now (float): Поточний монотонний час у секундах.
+
+        Returns:
+            tuple[Gesture | None, Gesture | None]: Нова разова подія та активний жест.
+        """
         if gesture != self.gesture:
             self.gesture, self.since, self.fired = gesture, now, False
 
@@ -41,7 +56,17 @@ class GestureGate:
 
 
 def classify(landmarks, width: int, height: int, cfg: GestureConfig) -> Gesture | None:
-    """Визначити жест за кутами та відносними відстанями точок руки."""
+    """Визначити жест за кутами та відносними відстанями точок руки.
+
+    Args:
+        landmarks (Sequence[NormalizedLandmark]): Точки MediaPipe з нормалізованими координатами x і y.
+        width (int): Ширина цільового зображення у пікселях.
+        height (int): Висота цільового зображення у пікселях.
+        cfg (GestureConfig): Налаштування, потрібні для цієї операції.
+
+    Returns:
+        Gesture | None: Визначений жест або None для невідомого положення пальців.
+    """
     points = [(v.x * width, v.y * height) for v in landmarks]
     wrist, palm = cfg.palm_scale_points
     scale = max(distance(points[wrist], points[palm]), cfg.min_palm_scale)

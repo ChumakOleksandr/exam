@@ -10,25 +10,33 @@ import cv2
 import numpy as np
 import yaml
 
-from config import DEFAULT_CONFIG, load_config, validate
-from gestures import Gesture, GestureGate, classify
+from config.config import DEFAULT_CONFIG, load_config, validate
+from core.gestures import Gesture, GestureGate, classify
 from main import configure, parse_args, process_frame
-from presentation import PresentationState, composite, handle_gesture, load_slides, stroke, update_drawing
-from utils import distance, landmark_point, straight
+from core.presentation import PresentationState, composite, handle_gesture, load_slides, stroke, update_drawing
+from core.utils import distance, landmark_point, straight
 
 
 class AppTests(unittest.TestCase):
     """Регресійні сценарії презентації та перевірка параметрів."""
 
     def setUp(self):
-        """Завантажити стандартну конфігурацію для кожного тесту."""
+        """Завантажити стандартну конфігурацію для кожного тесту.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         self.cfg = load_config()
         self.state = PresentationState.create([
             np.full((80, 100, 3), 127, dtype=np.uint8) for _ in range(2)
         ])
 
     def test_gate_requires_more_than_second_and_fires_once(self):
-        """Довге утримання не перемикає слайди багато разів."""
+        """Довге утримання не перемикає слайди багато разів.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         gate = GestureGate(self.cfg.gestures.hold_seconds)
         self.assertEqual(gate.update(Gesture.NEXT, 0), (None, None))
         self.assertEqual(gate.update(Gesture.NEXT, 1), (None, None))
@@ -39,7 +47,11 @@ class AppTests(unittest.TestCase):
         self.assertEqual(gate.update(Gesture.NEXT, 8.1), (Gesture.NEXT, Gesture.NEXT))
 
     def test_changed_gesture_resets_timer(self):
-        """Інший жест або втрата руки відразу скидає підтвердження."""
+        """Інший жест або втрата руки відразу скидає підтвердження.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         gate = GestureGate(1)
         gate.update(Gesture.DRAW, 0)
         gate.update(Gesture.COLOR, 0.9)
@@ -49,7 +61,11 @@ class AppTests(unittest.TestCase):
         self.assertEqual(gate.update(None, 2.3), (None, None))
 
     def test_navigation_start_color_and_bounds(self):
-        """Перевірити блокування до запуску, межі слайдів, очищення та палітру."""
+        """Перевірити блокування до запуску, межі слайдів, очищення та палітру.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         handle_gesture(self.state, Gesture.NEXT, self.cfg.drawing)
         self.assertEqual(self.state.index, 0)
         self.state.canvases[0].fill(255)
@@ -67,7 +83,11 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.state.color_index, 0)
 
     def test_mask_and_eraser_restore_original(self):
-        """Гумка відкриває слайд, не змінюючи його оригінал."""
+        """Гумка відкриває слайд, не змінюючи його оригінал.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         slide, canvas = self.state.slides[0], self.state.canvases[0]
         stroke(canvas, (70, 40), (10, 40), (0, 0, 255), 6)
         np.testing.assert_array_equal(composite(slide, canvas)[40, 40], [0, 0, 255])
@@ -76,7 +96,11 @@ class AppTests(unittest.TestCase):
         self.assertTrue(np.all(slide == 127))
 
     def test_lost_hand_breaks_stroke(self):
-        """Повернення руки не створює лінії через весь слайд."""
+        """Повернення руки не створює лінії через весь слайд.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         self.state.started = True
         hand = [SimpleNamespace(x=0.1, y=0.1) for _ in range(21)]
         update_drawing(self.state, Gesture.DRAW, hand, self.cfg.drawing)
@@ -92,7 +116,11 @@ class AppTests(unittest.TestCase):
         np.testing.assert_array_equal(before, self.state.canvases[0])
 
     def test_unicode_slides_and_natural_order(self):
-        """Завантажувати Unicode-шляхи та ставити slide2 перед slide10."""
+        """Завантажувати Unicode-шляхи та ставити slide2 перед slide10.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory) / 'Слайди'
             folder.mkdir()
@@ -103,14 +131,22 @@ class AppTests(unittest.TestCase):
             self.assertEqual([int(s[0, 0, 0]) for s in slides], [20, 100])
 
     def test_geometry_and_clipping(self):
-        """Вироджений кут безпечний, координати не виходять за полотно."""
+        """Вироджений кут безпечний, координати не виходять за полотно.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         self.assertEqual(distance((0, 0), (3, 4)), 5)
         self.assertTrue(straight((0, 0), (0, 1), (0, 2), -0.75))
         self.assertFalse(straight((0, 0), (0, 0), (0, 2), -0.75))
         self.assertEqual(landmark_point([SimpleNamespace(x=2, y=-1)], [0], 100, 80), (99, 0))
 
     def test_invalid_configuration(self):
-        """Відхиляти помилки до створення вікон та камери."""
+        """Відхиляти помилки до створення вікон та камери.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         for config in [
             replace(self.cfg, camera=replace(self.cfg.camera, median_kernel=4)),
             replace(self.cfg, gestures=replace(self.cfg.gestures, hold_seconds=0)),
@@ -122,8 +158,13 @@ class AppTests(unittest.TestCase):
                     validate(config)
 
     def test_yaml_relative_path_types_and_unknown_keys(self):
-        """Відносний шлях належить YAML, невідомі ключі не ігноруються."""
+        """Відносний шлях належить YAML, невідомі ключі не ігноруються.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         data = yaml.safe_load(DEFAULT_CONFIG.read_text(encoding='utf-8'))
+        data['paths']['slides'] = 'slides'
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'custom.yaml'
             path.write_text(yaml.safe_dump(data), encoding='utf-8')
@@ -140,8 +181,20 @@ class AppTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_config(path)
 
+    def test_packaged_config_uses_project_slides(self):
+        """Після перенесення YAML використовувати слайди з кореня проєкту.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
+        self.assertEqual(self.cfg.slides_dir, DEFAULT_CONFIG.parent.parent / 'slides')
+
     def test_cli_overrides_yaml(self):
-        """Явні аргументи мають пріоритет над YAML, включно з камерою 0."""
+        """Явні аргументи мають пріоритет над YAML, включно з камерою 0.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         args = parse_args(['--camera', '0', '--slides', '.', '--swap-hands'])
         cfg, folder = configure(args)
         self.assertEqual(cfg.camera.index, 0)
@@ -151,7 +204,11 @@ class AppTests(unittest.TestCase):
         self.assertFalse(cfg.camera.swap_hands)
 
     def test_frame_pipeline_without_hand(self):
-        """Пройти реальний шлях обробки кадру з порожнім результатом моделі."""
+        """Пройти реальний шлях обробки кадру з порожнім результатом моделі.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         detector = SimpleNamespace(process=lambda image: SimpleNamespace(multi_hand_landmarks=None))
         gate = GestureGate(1)
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -161,7 +218,11 @@ class AppTests(unittest.TestCase):
         self.assertFalse(self.state.started)
 
     def test_all_gestures_from_landmarks(self):
-        """Синтетичні точки перевіряють усі шість гілок класифікатора."""
+        """Синтетичні точки перевіряють усі шість гілок класифікатора.
+
+        Returns:
+            None: Функція не повертає значення.
+        """
         cases = [
             (Gesture.START, [True, True, True, True], True),
             (Gesture.NEXT, [True, False, False, False], False),

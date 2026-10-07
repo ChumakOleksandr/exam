@@ -1,6 +1,6 @@
 # Відносні шляхи рахуються від каталогу цього файлу.
 paths:
-  slides: slides
+  slides: ../slides
   extensions: [".png", ".jpg", ".jpeg"]
 
 camera:

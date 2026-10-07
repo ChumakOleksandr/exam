@@ -12,7 +12,8 @@
 git clone https://github.com/ChumakOleksandr/exam.git
 cd exam
 py -3.10 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
 Якщо проєкт уже є на комп'ютері, перейдіть у його папку замість повторного
@@ -26,36 +27,40 @@ Existing environment** та файл `.venv\Scripts\python.exe` із папки 
 
 ## Запуск
 
+Виконуйте команди з кореня проєкту в активованому оточенні `.venv`.
+У новому терміналі спочатку виконайте `.\.venv\Scripts\Activate.ps1`.
+
 ```powershell
-.\.venv\Scripts\python.exe main.py
+python main.py
 ```
 
 Покажіть відкриту праву долоню й утримуйте понад секунду. Для виходу натисніть
 **Esc** або **q** у вікні OpenCV, або закрийте одне з вікон.
 Зміни YAML застосовуються після перезапуску програми.
 
-За замовчуванням слайди читаються з папки `slides` поруч із `config.yaml`.
+За замовчуванням `config/config.yaml` містить `paths.slides: ../slides`,
+тому слайди читаються з папки `slides` у корені проєкту.
 Для копії проєкту в `A:\exam` це **`A:\exam\slides`**. Зображення PNG/JPG/JPEG
 сортуються природно: `slide2.png` перед `slide10.png`.
 Відсутні початкові матеріали можна завантажити окремо (потрібен інтернет):
 
 ```powershell
-.\.venv\Scripts\python.exe download_assets.py
+python download_assets.py
 ```
 
 ## Параметри argparse
 
 ```powershell
-.\.venv\Scripts\python.exe main.py --help
-.\.venv\Scripts\python.exe main.py --camera 1
-.\.venv\Scripts\python.exe main.py --slides "A:\exam\slides"
-.\.venv\Scripts\python.exe main.py --swap-hands
-.\.venv\Scripts\python.exe main.py --config "custom.yaml"
+python main.py --help
+python main.py --camera 1
+python main.py --slides "A:\exam\slides"
+python main.py --swap-hands
+python main.py --config "custom.yaml"
 ```
 
 | Параметр | Значення |
 |---|---|
-| `--config PATH` | Повний YAML-файл; типово `config.yaml` поруч із `config.py` |
+| `--config PATH` | Повний YAML-файл; типово `config/config.yaml` |
 | `--camera N` | Індекс камери; перевизначає `camera.index` із YAML |
 | `--slides PATH` | Папка слайдів; перевизначає `paths.slides` |
 | `--swap-hands` | Поміняти місцями очікувані мітки Left/Right, якщо камера вже віддзеркалює кадр |
@@ -66,12 +71,13 @@ Existing environment** та файл `.venv\Scripts\python.exe` із папки 
 поточної робочої папки термінала, а `paths.slides` у YAML — від папки YAML.
 Для `download_assets.py` доступні `--config PATH` і `--help`.
 
-## Налаштування config.yaml
+## Налаштування config/config.yaml
 
-`config.yaml` містить значення, а `config.py` — dataclass-структури, безпечне
+`config/config.yaml` містить значення, а `config/config.py` — dataclass-структури, безпечне
 читання через `yaml.safe_load` та перевірки. Некоректні ключі, типи й діапазони
 спричиняють зрозумілу помилку до відкриття камери. Для іншої конфігурації
 скопіюйте **весь** файл, змініть значення і передайте його через `--config`.
+Якщо копіюєте YAML у корінь проєкту, змініть `paths.slides` на `slides`.
 
 | Секція | Що налаштовує |
 |---|---|
@@ -133,22 +139,44 @@ Existing environment** та файл `.venv\Scripts\python.exe` із папки 
 
 ## Структура
 
-| Файл | Відповідальність |
-|---|---|
-| `main.py` | `parse_args`, конфігурація, обробка кадру, цикл камери |
-| `config.yaml`, `config.py` | Значення налаштувань, типізовані секції та перевірки |
-| `gestures.py` | Enum жестів, класифікація, часовий фільтр |
-| `utils.py` | `distance`, `straight`, сортування та перетворення координат |
-| `presentation.py` | Слайди, стан, `handle_gesture`, полотна й маска |
-| `vision.py` | MediaPipe, підготовка кадру, вибір руки |
-| `display.py` | Вікна, курсор і текстові підказки |
-| `download_assets.py` | Завантаження відсутніх слайдів |
-| `test_app.py` | Автоматичні тести без фізичної камери |
+```text
+exam/
+├── main.py
+├── download_assets.py
+├── requirements.txt
+├── README.md
+├── config/
+│   ├── __init__.py
+│   ├── config.py
+│   └── config.yaml
+├── core/
+│   ├── __init__.py
+│   ├── gestures.py
+│   ├── vision.py
+│   ├── presentation.py
+│   ├── display.py
+│   └── utils.py
+├── tests/
+│   ├── __init__.py
+│   └── test_app.py
+└── slides/
+```
+
+- `main.py` — аргументи, конфігурація й цикл програми.
+- `config` — YAML, типізовані налаштування та їх перевірка.
+- `core` — жести, модель, малювання, вікна та геометричні функції.
+- `tests` — автоматичні тести без фізичної камери.
+- `download_assets.py` — окрема команда завантаження слайдів.
+
+У docstrings функцій наведено `Args` з типами та призначенням параметрів
+і `Returns` з типом та змістом результату. Службові `self` і `cls` методів
+не описуються як аргументи користувача. `NormalizedLandmark` у документації
+означає точку MediaPipe; `Sequence` — послідовність таких об'єктів.
 
 ## Перевірки та типові проблеми
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest -v
+python -m unittest discover -s tests -v
 ```
 
 Тести перевіряють конфігурацію, аргументи, усі шість жестів на синтетичних

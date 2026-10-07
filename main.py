@@ -7,15 +7,22 @@ import time
 
 import cv2
 
-from config import DEFAULT_CONFIG, load_config, validate
-from display import create_windows, render_camera, render_slide, should_exit
-from gestures import GestureGate, classify
-from presentation import PresentationState, handle_gesture, load_slides, update_drawing
-from vision import create_detector, detect_hand, prepare_frame
+from config.config import DEFAULT_CONFIG, load_config, validate
+from core.display import create_windows, render_camera, render_slide, should_exit
+from core.gestures import GestureGate, classify
+from core.presentation import PresentationState, handle_gesture, load_slides, update_drawing
+from core.vision import create_detector, detect_hand, prepare_frame
 
 
 def parse_args(argv=None):
-    """Прочитати параметри; None означає використати значення з YAML."""
+    """Прочитати параметри; None означає використати значення з YAML.
+
+    Args:
+        argv (list[str] | None): Аргументи командного рядка; None читає sys.argv.
+
+    Returns:
+        argparse.Namespace: Розібрані параметри командного рядка.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=DEFAULT_CONFIG, help='Path to full YAML configuration')
     parser.add_argument('--camera', type=int, default=None, help='Override camera index from YAML')
@@ -27,7 +34,14 @@ def parse_args(argv=None):
 
 
 def configure(args):
-    """Завантажити YAML і застосувати явні параметри командного рядка."""
+    """Завантажити YAML і застосувати явні параметри командного рядка.
+
+    Args:
+        args (argparse.Namespace): Параметри, отримані від parse_args.
+
+    Returns:
+        tuple[AppConfig, pathlib.Path]: Конфігурація з CLI-перевизначеннями та шлях слайдів.
+    """
     cfg = load_config(args.config)
     camera = replace(
         cfg.camera,
@@ -42,7 +56,18 @@ def configure(args):
 
 
 def process_frame(frame, detector, gate, state, cfg):
-    """Обробити один кадр: розпізнати жест, змінити стан і підготувати вікна."""
+    """Обробити один кадр: розпізнати жест, змінити стан і підготувати вікна.
+
+    Args:
+        frame (numpy.ndarray): Кадр камери uint8 форми (висота, ширина, 3) у BGR.
+        detector (mediapipe.solutions.hands.Hands): Ініціалізована модель пошуку точок руки.
+        gate (GestureGate): Стан таймера підтвердження поточного жесту.
+        state (PresentationState): Змінюваний стан сеансу: слайди, полотна та поточні індекси.
+        cfg (AppConfig): Налаштування, потрібні для цієї операції.
+
+    Returns:
+        tuple[numpy.ndarray, numpy.ndarray]: Зображення слайда та камери для показу.
+    """
     frame = prepare_frame(frame, cfg.camera)
     hand = detect_hand(frame, detector, cfg)
     height, width = frame.shape[:2]
@@ -59,7 +84,15 @@ def process_frame(frame, detector, gate, state, cfg):
 
 
 def run_presentation(cfg, state):
-    """Запустити цикл камери та звільнити ресурси навіть після помилки."""
+    """Запустити цикл камери та звільнити ресурси навіть після помилки.
+
+    Args:
+        cfg (AppConfig): Налаштування, потрібні для цієї операції.
+        state (PresentationState): Змінюваний стан сеансу: слайди, полотна та поточні індекси.
+
+    Returns:
+        None: Функція не повертає значення.
+    """
     capture = cv2.VideoCapture(cfg.camera.index)
     gate = GestureGate(cfg.gestures.hold_seconds)
 
@@ -86,7 +119,14 @@ def run_presentation(cfg, state):
 
 
 def main(argv=None):
-    """Зібрати конфігурацію, слайди та запустити презентацію."""
+    """Зібрати конфігурацію, слайди та запустити презентацію.
+
+    Args:
+        argv (list[str] | None): Аргументи командного рядка; None читає sys.argv.
+
+    Returns:
+        None: Функція не повертає значення.
+    """
     cfg, folder = configure(parse_args(argv))
     state = PresentationState.create(load_slides(folder, cfg.paths.extensions))
     run_presentation(cfg, state)

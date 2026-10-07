@@ -119,18 +119,38 @@ class AppConfig:
 
     @property
     def slides_dir(self) -> Path:
-        """Повернути шлях слайдів відносно каталогу YAML."""
+        """Повернути шлях слайдів відносно каталогу YAML.
+
+        Returns:
+            pathlib.Path: Абсолютний шлях до слайдів, обчислений від каталогу YAML.
+        """
         return (self.directory / self.paths.slides).resolve()
 
 
 def require(condition, message):
-    """Підняти зрозумілу помилку для некоректного налаштування."""
+    """Підняти зрозумілу помилку для некоректного налаштування.
+
+    Args:
+        condition (bool): Умова коректності налаштування.
+        message (str): Пояснення помилки, якщо умова не виконана.
+
+    Returns:
+        None: Функція не повертає значення.
+    """
     if not condition:
         raise ValueError(f'Config: {message}')
 
 
 def matches_type(value, expected):
-    """Перевірити скаляр або вкладений список за анотацією поля."""
+    """Перевірити скаляр або вкладений список за анотацією поля.
+
+    Args:
+        value (object): Значення з YAML, тип якого перевіряється.
+        expected (type | types.GenericAlias): Очікуваний тип або анотація вкладеного списку.
+
+    Returns:
+        bool: Чи відповідає значення очікуваному типу.
+    """
     if getattr(expected, '__origin__', None) is list:
         return isinstance(value, list) and all(
             matches_type(item, expected.__args__[0]) for item in value
@@ -143,7 +163,16 @@ def matches_type(value, expected):
 
 
 def make_section(cls, values, name):
-    """Відхилити зайві/пропущені поля і створити типізовану секцію."""
+    """Відхилити зайві/пропущені поля і створити типізовану секцію.
+
+    Args:
+        cls (type): Клас dataclass для створення секції конфігурації.
+        values (dict[str, object]): Значення полів секції з YAML.
+        name (str): Назва секції для повідомлень про помилки.
+
+    Returns:
+        object: Екземпляр переданого класу dataclass із перевіреними полями.
+    """
     require(isinstance(values, dict), f'{name} must be a mapping')
     require(set(values) == {field.name for field in fields(cls)}, f'check fields in {name}')
 
@@ -155,7 +184,14 @@ def make_section(cls, values, name):
 
 
 def validate(cfg):
-    """Перевірити діапазони, палітру, розміри та індекси MediaPipe."""
+    """Перевірити діапазони, палітру, розміри та індекси MediaPipe.
+
+    Args:
+        cfg (AppConfig): Налаштування, потрібні для цієї операції.
+
+    Returns:
+        None: Функція не повертає значення.
+    """
     camera, detection, gesture = cfg.camera, cfg.detection, cfg.gestures
     pen, ui = cfg.drawing, cfg.display
 
@@ -208,7 +244,14 @@ def validate(cfg):
 
 
 def load_config(path: Path = DEFAULT_CONFIG) -> AppConfig:
-    """Прочитати повний YAML через safe_load та перевірити всі секції."""
+    """Прочитати повний YAML через safe_load та перевірити всі секції.
+
+    Args:
+        path (pathlib.Path | str): Шлях до повного YAML-файлу конфігурації.
+
+    Returns:
+        AppConfig: Перевірена конфігурація застосунку.
+    """
     path = Path(path).resolve()
     with path.open(encoding='utf-8') as stream:
         try:
