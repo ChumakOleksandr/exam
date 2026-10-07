@@ -1,0 +1,67 @@
+# Відносні шляхи рахуються від каталогу цього файлу.
+paths:
+  slides: slides
+  extensions: [".png", ".jpg", ".jpeg"]
+
+camera:
+  index: 0
+  mirror: true
+  median_kernel: 5
+  swap_hands: false
+
+detection:
+  max_num_hands: 1
+  min_detection_confidence: 0.7
+  min_tracking_confidence: 0.5
+  handedness_confidence: 0.7
+
+gestures:
+  hold_seconds: 1.0
+  straight_cosine: -0.75
+  raised_margin: 0.1
+  thumb_distance: 0.45
+  folded_margin: 0.15
+  sideways_ratio: 1.0
+  min_palm_scale: 1.0
+  palm_scale_points: [0, 9]
+  finger_tips: [8, 12, 16, 20]
+  mcp_offset: 3
+  pip_offset: 2
+  thumb_points: [2, 3, 4]
+  thumb_reference: 5
+
+drawing:
+  # Кольори OpenCV у порядку BGR.
+  colors: [[0, 0, 255], [0, 255, 0], [255, 0, 0]]
+  color_names: [RED, GREEN, BLUE]
+  thickness: 12
+  eraser_thickness: 60
+  pointer_points: [8]
+  eraser_points: [0, 5, 9, 13, 17]
+
+display:
+  presentation_title: Presentation
+  camera_title: Camera
+  window_size: [800, 600]
+  cursor_color: [160, 160, 160]
+  cursor_radius: 8
+  cursor_thickness: 1
+  landmark_color: [0, 255, 255]
+  landmark_radius: 3
+  text_color: [255, 255, 255]
+  outline_color: [0, 0, 0]
+  text_scale: 0.48
+  text_thickness: 1
+  outline_thickness: 3
+  text_origin: [10, 25]
+  line_spacing: 25
+  welcome_origin: [20, 65]
+  welcome_scale: 0.7
+  welcome_thickness: 2
+  wait_key_ms: 1
+  exit_keys: [27, 113]  # Esc, q
+
+downloads:
+  source_url: https://api.github.com/repos/HalyshAnton/ITStep-AI/contents/data/exam/hands/slides?ref=exam
+  listing_timeout: 30
+  file_timeout: 90
